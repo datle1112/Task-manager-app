@@ -2,17 +2,15 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 
-
-
 const User = mongoose.model("User", { // "model" method accepts two arguments: First is name of model and second one is defination of this model
     name : {
         type : String, 
-        require : true,
+        required : [true,"Please provide username"],
         trim : true // Make sure that no space in "name" property 
     },
     password : {
         type : String,
-        require : String,
+        required : true,
         trim : true, 
         minlength : 7,
         validate(value) {
@@ -23,7 +21,7 @@ const User = mongoose.model("User", { // "model" method accepts two arguments: F
     },
     email : {
         type : String,
-        require : true,
+        required : true,
         trim : true,
         lowercase : true,
         validate(value) {
