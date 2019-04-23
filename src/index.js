@@ -1,4 +1,12 @@
 // This file is used to initialize Express server
+
+//// Predefined operation (CRUD) for resources of HTTP method: 
+/* 
+Create <=> POST 
+Read <=> GET
+Update <=> PATCH
+Delete <=> DELETE
+*/
 const express = require('express');
 require('./db/mongoose.js'); // Connect mongoose to mongoDB 
 const User = require('./model/user');
@@ -112,6 +120,52 @@ app.get('/tasks/:id', async (req,res) => {
 });
 
 
+
+//// CONFIGURING RestAPI FOR UPDATING RESOURCES
+app.patch('/users/:id', async (req,res) => {
+    // When we try to update properties that aren't existed in resources, The PATCH operation (Update) still return status code "200"
+    // which means "successful" but the resource itself isn't updated anything. To prevent that situation as well as provide user
+    // with better experience, an if-else logic condition is needed 
+
+    const updates = Object.keys(req.body); // Return all update from req.body in array
+    const allowedUpdate = ['name', 'age', 'email']; // Array contains allowed changes in "user"
+    const isAllowed = updates.every((update) => allowedUpdate.includes(update)); 
+    // Check if all elements in "updates" array are included in "allowedUpdate" array
+    // If callback function inside "every" method is "true", the return value of "every" is "true". If there is only one "false", the
+    // value of "every" will imediately be "false"
+
+    // The used method is "every". Basically, this method is similar with "forEach" and "map", the difference is the return value 
+    // "forEach" returns nothing, "map" returns an array after taking actions on original array and "every" only returns Boolean value 
+    if (!isAllowed) {
+       return res.status(400).send({error : "Invalid change!"});
+    }
+    try {
+        const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+        if(!user) {
+            return res.status(404).send();
+        } 
+        res.send(user);
+    } catch(e) {
+        res.status(400).send(e);
+    }
+})
+app.patch('/tasks/:id', async (req,res) => {
+    const updates = Object.keys(req.body);
+    const allowedUpdates = ["task", "completed"];
+    const isAllowed = updates.every((update) => allowedUpdates.includes(update));
+    if (!isAllowed) {
+        return res.status(400).send({error : "Invalid change!"});
+    }
+    try{
+        const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+        if (!task) {
+            return res.status(404).send();
+        }
+        res.send(task);
+    } catch(e) {
+        res.status(400).send(e);
+    }
+})
 
 
 app.listen(port, () => { // This application will be deployed on Heroku and it will run on specific port that Heroku provide 
