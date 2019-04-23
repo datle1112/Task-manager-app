@@ -13,81 +13,102 @@ app.use(express.json());
 
 
 
-//// CONFIGURING RestAPI FOR CREATING RESOURCES
-app.post('/users', (req, res) => {
-    const user = new User(req.body); // Incoming JSON data could be accessed via "req.body" 
-    user.save().then(() => {
-        res.status(201).send(user); // Configure HTTP response status code
-        console.log("Successfully create new user");
-    }).catch((error) => {
-        res.status(400).send(error);
-        console.log("Error", error)
-    });
-});
+// CONFIGURING RestAPI FOR CREATING RESOURCES
+// app.post('/users', (req, res) => {
+//     const user = new User(req.body); // Incoming JSON data could be accessed via "req.body" 
+//     user.save().then(() => {
+//         res.status(201).send(user); // Configure HTTP response status code
+//         console.log("Successfully create new user");
+//     }).catch((error) => {
+//         res.status(400).send(error);
+//         console.log("Error", error)
+//     });
+// });
 
-app.post('/tasks', (req,res) => {
+// Rewrite code using async-await
+app.post('/users', async (req,res) => {
+    const user = new User(req.body);
+    try {
+        await user.save();
+        res.status(201).send(user);
+    } catch (e) {
+        res.status(400).send(e);
+    }
+})
+
+// app.post('/tasks', (req,res) => {
+//     const task = new Task(req.body);
+//     task.save().then(() => { // Save new task to database "task-manager-api", model "Task"
+//         res.status(201).send(task);
+//         console.log("Successfully create new task");
+//     }).catch((error) => {
+//         res.status(400).send(error);
+//     });
+// });
+app.post('/tasks', async (req,res) => {
     const task = new Task(req.body);
-
-    task.save().then(() => { // Save new task to database "task-manager-api", model "Task"
+    try {
+        await task.save();
         res.status(201).send(task);
-        console.log("Successfully create new task");
-    }).catch((error) => {
-        res.status(400).send(error);
-    });
-});
+    } catch(e) {
+        res.status(400).send(e);
+    }
+})
 
 
 
 //// CONFIGURING RestAPI FOR READING RESOURCES
-app.get('/users',(req,res) => {
-    User.find({}).then((users) => { // If we don't provide any parameter to "find()" method, it will fetch all data from database 
-        res.status(200).send(data);
-    }).catch((error) => {
-        res.status(500).send();
-    });
-});
-app.get('/users/:id', (req,res) => { 
-    // The _id parameter of each parameter is different from others. Therefore, we need to access to route parameters, which 
+
+// Rewrite code using async-await 
+app.get('/users', async (req,res) => {
+    try { 
+        const users = await User.find({}); // If we don't provide any parameter to "find()" method, it will fetch all data from database 
+        res.send(users);
+    } catch(e) {
+        res.status(500).send()
+    }
+})
+
+app.get('/users/:id', async (req,res) => {
+    // The _id parameter of each documetn is different from others. Therefore, we need to access to "route parameter", which 
     // is a part of URL and is used to capture dynamic values
 
-    // The route parameter is marked by ":" after forward slash and the name of route parameter could be anything we want
+    // The "route parameter" is marked by ":" after forward slash and the name of route parameter could be anything we want
     // In this case, route parameter is named "id"
-    
-    const _id = req.params.id; // Access to route parameter 
-
-    User.findById(_id).then((user) => {
+    const _id = req.params.id;
+    try {
+        user = await User.findById(_id);
+        if (!user) {
         // mongoDB does not considers "failure" when it can't send any results back to us when we're looking for something, 
         // it considers that as "Success". In other word, the first function (resolve) is going to run eventhough we might not always have result 
-        // Therefore, we need conditional logic to keep everything work correctly
-        if (!user) { 
-            res.status(404).send();
-        } else {
-            res.send(user);
-        }
-    }).catch((error) => {
-        res.status(500).send();
-    });
-});
+        // Therefore, we need conditional logic to keep everything work correctly   
+        return res.status(404).send();
+        } 
+        res.send(user);
+    } catch(e) {
+        res.status(500).send(e);
+    }
+} )
 
-app.get('/tasks', (req,res) => { 
-    Task.find({}).then((tasks) => {
+app.get('/tasks', async (req,res) => { 
+    try {
+        const tasks = await Task.find({});
         res.send(tasks);
-    }).catch((e) => {
+    } catch(e) {
         res.status(500).send();
-    });
+    }
 });
-app.get('/tasks/:id', (req,res) => {
+app.get('/tasks/:id', async (req,res) => {
     const _id = req.params.id;
-
-    Task.findById(_id).then((task) => {
-        if (!task) {
-            res.status(404).send();
-        } else {
-            res.send(task);
+    try {
+        const task =  await Task.findById(_id);
+        if(!task) {
+            return res.status(404).send();
         }
-    }).catch((e) => {
+        res.send(task);
+    } catch(e) {
         res.status(500).send();
-    });
+    }
 });
 
 
