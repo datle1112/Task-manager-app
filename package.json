@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev" : "nodemon src/index.js",
-    "DB" : "C:/Users/ledat/mongoDB/mongo_DB/bin/mongod.exe --dbpath=/Users/ledat/mongoDB_data"
+    "dev": "nodemon src/index.js",
+    "DB": "C:/Users/ledat/mongoDB/mongo_DB/bin/mongod.exe --dbpath=/Users/ledat/mongoDB_data"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "express": "^4.16.3",
     "mongodb": "^3.1.1",
     "mongoose": "^5.3.16",

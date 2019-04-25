@@ -66,7 +66,7 @@ router.patch('/users/:id', async (req,res) => {
     // with better experience, an if-else logic condition is needed 
 
     const updates = Object.keys(req.body); // Return all update from req.body in array
-    const allowedUpdate = ['name', 'age', 'email']; // Array contains allowed changes in "user"
+    const allowedUpdate = ['name', 'age', 'email', 'password']; // Array contains allowed changes in "user"
     const isAllowed = updates.every((update) => allowedUpdate.includes(update)); 
     // Check if all elements in "updates" array are included in "allowedUpdate" array
     // If callback function inside "every" method is "true", the return value of "every" is "true". If there is only one "false", the
@@ -78,7 +78,16 @@ router.patch('/users/:id', async (req,res) => {
        return res.status(400).send({error : "Invalid change!"});
     }
     try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+        // "findbyIdAndUpdate" method automatically bypasses mongoose and performs a direct operation on database so we can't use it 
+        // for authentication purpose  
+        //const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+
+        // New method 
+        const user = await User.findById(req.params.id) // Find user with given id
+        updates.forEach((update) => user[update] = req.body[update]) 
+        // We can't use dot notation "." since we don't know the changing properties, we have to use braket notation "[]"
+        await user.save();
+
         if(!user) {
             return res.status(404).send({error : "Can not find resource!"});
         } 
