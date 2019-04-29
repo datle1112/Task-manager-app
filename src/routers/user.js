@@ -42,7 +42,7 @@ router.post('/users/login', async (req,res) => {
         res.status(400).send();
     }
 });
-// Route to handle user logout
+// Route to handle user logout from one device only (only detele one toke)
 router.post('/users/logout' ,auth , async (req,res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => { 
@@ -57,34 +57,50 @@ router.post('/users/logout' ,auth , async (req,res) => {
         res.status(500).send();
     }
 })
+// Route to handle user logout from all devices (delete all tokens)
+router.post('/users/logoutAll', auth, async(req,res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send();
+    } catch {
+        res.status(500).send();
+    }
+})
 //// CONFIGURING RestAPI FOR READING RESOURCES
 router.get('/users/me', auth, async (req,res) => {
     res.status(200).send(req.user);
 })
-router.get('/users/:id', async (req,res) => {
-    // The _id parameter of each documetn is different from others. Therefore, we need to access to "route parameter", which 
-    // is a part of URL and is used to capture dynamic values
 
-    // The "route parameter" is marked by ":" after forward slash and the name of route parameter could be anything we want
-    // In this case, route parameter is named "id"
-    const _id = req.params.id;
-    try {
-        user = await User.findById(_id);
-        if (!user) {
-        // mongoDB does not considers "failure" when it can't send any results back to us when we're looking for something, 
-        // it considers that as "Success". In other word, the first function (resolve) is going to run eventhough we might not always have result 
-        // Therefore, we need conditional logic to keep everything work correctly   
-        return res.status(404).send({error : "Can not find resource!"});
-        } 
-        res.send(user);
-    } catch(e) {
-        res.status(500).send(e);
-    }
-});
+/* 
+Since we already improve route handle to fetch user's profile as well as adding authentication to application, access to invidiual user's data 
+through _id isn't necessary anymore and we can detele it. I will keep that inside comment for review purpose
+
+// router.get('/users/:id', async (req,res) => {
+//     // The _id parameter of each documetn is different from others. Therefore, we need to access to "route parameter", which 
+//     // is a part of URL and is used to capture dynamic values
+
+//     // The "route parameter" is marked by ":" after forward slash and the name of route parameter could be anything we want
+//     // In this case, route parameter is named "id"
+//     const _id = req.params.id;
+//     try {
+//         user = await User.findById(_id);
+//         if (!user) {
+//         // mongoDB does not considers "failure" when it can't send any results back to us when we're looking for something, 
+//         // it considers that as "Success". In other word, the first function (resolve) is going to run eventhough we might not always have result 
+//         // Therefore, we need conditional logic to keep everything work correctly   
+//         return res.status(404).send({error : "Can not find resource!"});
+//         } 
+//         res.send(user);
+//     } catch(e) {
+//         res.status(500).send(e);
+//     }
+    }); 
+*/
 
 
 //// CONFIGURING RestAPI FOR UPDATING RESOURCES
-router.patch('/users/:id', async (req,res) => {
+router.patch('/users/me', auth, async (req,res) => {
     // When we try to update properties that aren't existed in resources, The PATCH operation (Update) still return status code "200"
     // which means "successful" but the resource itself isn't updated anything. To prevent that situation as well as provide user
     // with better experience, an if-else logic condition is needed 
@@ -106,16 +122,13 @@ router.patch('/users/:id', async (req,res) => {
         // for authentication purpose  
         //const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
 
-        // New method 
-        const user = await User.findById(req.params.id) // Find user with given id
-        updates.forEach((update) => user[update] = req.body[update]) 
+        // New method: 
+        // We don't need to find user by id anymore since user's data will be fetched to server after authentication process (inside req.user)
+        // const user = await User.findById(req.params.id) 
+        updates.forEach((update) => req.user[update] = req.body[update]) 
         // We can't use dot notation "." since we don't know the changing properties, we have to use braket notation "[]"
-        await user.save();
-
-        if(!user) {
-            return res.status(404).send({error : "Can not find resource!"});
-        } 
-        res.send(user);
+        await req.user.save();
+        res.send(req.user);
     } catch(e) {
         res.status(400).send(e);
     }
@@ -123,13 +136,17 @@ router.patch('/users/:id', async (req,res) => {
 
 
 //// CONFIGURING RestAPI FOR DELETING RESOURCES 
-router.delete('/users/:id', async(req,res) => {
+router.delete('/users/me', auth, async(req,res) => {
     try{
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) {
-            return res.status(404).send({error : "Can not find resource!"});
-        }
-        res.send(user);
+        // const user = await User.findByIdAndDelete(req.user._id);
+
+        // if (!user) {
+        //     return res.status(404).send({error : "Can not find resource!"});
+        // }
+        
+        // Rewrite above code
+        await req.user.remove() // Removes this document from the database
+        res.send(req.user);
     } catch(e) {
         res.status(500).send();
     }

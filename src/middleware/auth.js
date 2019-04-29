@@ -16,9 +16,11 @@ const auth = async (req, res, next) => {
              // we have to check whether passing token is part of tokens array since we will delete that token when user log out.
              // We use string property name when there is a special character inside property 
         });
-        if (!user) {
+        
+        if (!user) { // Check if we could find corret user 
             throw new Error();
         }
+        // Sending authentication and user object data as part of request to Express server
         req.token = token;
         req.user = user;
         next() // If user is found with correct _id and authentication token, we will call next() function 

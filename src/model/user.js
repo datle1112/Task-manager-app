@@ -90,6 +90,20 @@ userSchema.methods.generateAuthToken = async function() {
     return token;
 
 }
+////
+userSchema.methods.toJSON = function () { 
+    // Using toJSON() to manipulate passing JSON object to response 
+    // The return value of this method is used in calls to JSON.stringify(doc) which occurs in res.send() method 
+    // In more detail, whenever an JSON object (A) is sent by res.send() method, it will be sent through response by "JSON.stringify(A)"
+    const user = this;
+    const userObject = user.toObject(); // userObject variable contains all raw data from individual "user" object
+
+    // Manipulate return JSON object
+    delete userObject.password
+    delete userObject.tokens 
+
+    return userObject;
+}
 //// Hash the plain text password before saving 
 userSchema.pre("save", async function(next) {
     // First argument is "name of event" and second one is "executed function"
