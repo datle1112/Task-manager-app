@@ -120,7 +120,7 @@ router.patch('/users/me', auth, async (req,res) => {
     try {
         // "findbyIdAndUpdate" method automatically bypasses mongoose and performs a direct operation on database so we can't use it 
         // for authentication purpose  
-        //const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+        // const user = await User.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
 
         // New method: 
         // We don't need to find user by id anymore since user's data will be fetched to server after authentication process (inside req.user)

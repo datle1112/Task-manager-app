@@ -1,6 +1,7 @@
 // Modularize route handle of "task" for later use purpose 
 const express = require('express');
 const router = new express.Router();
+const auth = require('../middleware/auth');
 const Task = require('../model/task'); 
 module.exports = router; 
 
@@ -14,8 +15,15 @@ module.exports = router;
 //         res.status(400).send(error);
 //     });
 // });
-router.post('/tasks', async (req,res) => {
-    const task = new Task(req.body);
+router.post('/tasks', auth, async (req,res) => {
+    // Since we already have auth() middleware for authentication purpose, we need to restructure code in this block 
+    // const task = new Task(req.body);
+    const task = new Task({
+        ...req.body, // Fetch all data from req.body (key-value pairs) to new "task" obejct
+        owner : req.user._id 
+        // We need to hard-code "owner" variable (used to stored _id of user who creates tasks) since we don't want to send 
+        // it to server as part of request's body such as "user" object data or "token" data. 
+    })
     try {
         await task.save();
         res.status(201).send(task);
@@ -26,20 +34,27 @@ router.post('/tasks', async (req,res) => {
 
 
 //// CONFIGURING RestAPI FOR READING RESOURCES
-router.get('/tasks', async (req,res) => { 
+router.get('/tasks', auth, async (req,res) => { // Adding auth middleware 
     try {
-        const tasks = await Task.find({});
-        res.send(tasks);
+        // First approach : Modify .find() function 
+        // const tasks = await Task.find({owner : req.user._id});
+        // res.send(tasks);
+
+        // Second approach : Using populate() to fetch data
+        await req.user.populate('tasks').execPopulate();
+        res.send(req.user.tasks);
+
     } catch(e) {
         res.status(500).send();
     }
 });
-router.get('/tasks/:id', async (req,res) => {
+router.get('/tasks/:id', auth, async (req,res) => { // Adding auth middleware 
     const _id = req.params.id;
     try {
-        const task =  await Task.findById(_id);
-        if(!task) {
-            return res.status(404).send({error : "Can not find resource!"});
+        const task = await Task.findOne({ _id, owner : req.user._id});
+        
+        if (!task) {
+            return res.status(404).send();
         }
         res.send(task);
     } catch(e) {
@@ -49,7 +64,7 @@ router.get('/tasks/:id', async (req,res) => {
 
 
 //// CONFIGURING RestAPI FOR UPDATING RESOURCES
-router.patch('/tasks/:id', async (req,res) => {
+router.patch('/tasks/:id', auth, async (req,res) => {
     const updates = Object.keys(req.body);
     const allowedUpdates = ["task", "completed"];
     const isAllowed = updates.every((update) => allowedUpdates.includes(update));
@@ -59,15 +74,19 @@ router.patch('/tasks/:id', async (req,res) => {
     try{
         // "findbyIdAndUpdate" method automatically bypasses mongoose and performs a direct operation on database so we can't use it 
         // to apply middleware  
-        //const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
+        // const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new : true, runValidators : true});
 
         // New method 
-        const task = await Task.findById(req.params.id);
-        updates.forEach((update) => task[update] = req.body[update]);
-        await task.save();
+        // const task = await Task.findOne(req.params.id);
+        const _id = req.params.id; // Store ObjectID of task 
+        const task = await Task.findOne({ _id, owner : req.user._id}); 
+
         if (!task) {
             return res.status(404).send({error : "Can not find resource!"});
         }
+
+        updates.forEach((update) => task[update] = req.body[update]);
+        await task.save();
         res.send(task);
     } catch(e) {
         res.status(400).send(e);
@@ -76,12 +95,14 @@ router.patch('/tasks/:id', async (req,res) => {
 
 
 // CONFIGURING RestAPI FOR DELETING RESOURCES 
-router.delete('/tasks/:id', async (req,res) => {
+router.delete('/tasks/:id', auth, async (req,res) => {
     try{
-        const task = await Task.findByIdAndDelete(req.params.id);
+        // const task = await Task.findByIdAndDelete(req.params.id);
+        const task = await Task.findOne({_id : req.params.id, owner : req.user._id});
         if (!task) {
             return res.status(404).send({error : "Can not find resource!"});
         }
+        await task.remove();
         res.send(task);
     } catch(e) {
         res.status(400).send();

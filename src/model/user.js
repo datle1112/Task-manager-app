@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bscrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Task = require('../model/task');
 // Mongoose supports middleware, which is used to adjust behavior of mongoose's models 
 // In other to ultilize functionalities of mongoose's middleware, we need to create "schema" of mongoose's model
 const userSchema = new mongoose.Schema({ 
@@ -55,10 +56,48 @@ const userSchema = new mongoose.Schema({
     }]
 });
 
+
 /* There are two accessible methods for middleware
   "pre" : Doing something before events
   "post" : Doing something after events
 */
+//// Hash the plain text password before saving 
+userSchema.pre("save", async function (next) {
+    // First argument is "name of event" and second one is "executed function"
+    // The executed function must be standard function, not arrow since "this" binding plays an important role
+    const user = this; // Access to individual user that's about to be saved through variable "user"
+    
+    // We only want to hash the password when it's first created or modified (updated) by user
+    if (user.isModified('password')){ 
+        user.password = await bscrypt.hash(user.password, 8); 
+        // First argument is plain text to hash,second is number round to execute algorithm 
+    } 
+    next();
+    // next() is a callback function, which will be called after all code inside this block are executed 
+    // This action will notify our program that middleware is successfully executed 
+});
+//// Delete user's tasks when user is removed
+userSchema.pre('remove', async function (next) {
+    const user = this;
+    await Task.deleteMany({owner : user._id});
+    next()
+})
+
+
+/* 
+Setup virtual property : This property isn't data stored in database, it's just a relationship between two entities 
+In this case, it's between "User" model and "Task" model 
+*/
+userSchema.virtual('tasks', { // First argument is name of virtual field, second one is an object to configure individual field related to virtual field
+    // .virtual() method is used to setup one of virtual attribute (property). It is called virtual property because it doesn't change the way 
+    // we store data for "User" documents on database. It is the method for "mongoose" to figure out how "Task" model and "User" model are related
+
+    ref : 'Task',
+    localField : '_id', // localField is the name of the field inside "THIS COLLECTION" that local data is stored (in this case, THIS COLLECTION is "User")  
+    foreignField : 'owner' 
+    // foreignField is the name of the field on the "OTHER COLLECTION" that creates relationship (in this case, OTHER COLLECTION is "Task")
+}) 
+ 
 //// Define new function to verify user of by using "statics"
 // which allows us to create function that exists directly on mongoose's model
 userSchema.statics.findByCredentials = async (email, password) => { // Arrow functiom is used since "this" binding isn't important
@@ -90,7 +129,7 @@ userSchema.methods.generateAuthToken = async function() {
     return token;
 
 }
-////
+//// Modify return data of user 
 userSchema.methods.toJSON = function () { 
     // Using toJSON() to manipulate passing JSON object to response 
     // The return value of this method is used in calls to JSON.stringify(doc) which occurs in res.send() method 
@@ -104,21 +143,6 @@ userSchema.methods.toJSON = function () {
 
     return userObject;
 }
-//// Hash the plain text password before saving 
-userSchema.pre("save", async function(next) {
-    // First argument is "name of event" and second one is "executed function"
-    // The executed function must be standard function, not arrow since "this" binding plays an important role
-    const user = this; // Access to individual user that's about to be saved through variable "user"
-    
-    // We only want to hash the password when it's first created or modified (updated) by user
-    if (user.isModified('password')){ 
-        user.password = await bscrypt.hash(user.password, 8); 
-        // First argument is plain text to hash,second is number round to execute algorithm 
-    } 
-    next();
-    // next() is a callback function, which will be called after all code inside this block are executed 
-    // This action will notify our program that middleware is successfully executed 
-});
 
 // "model" method accepts two arguments: First is name of model and second one is defination of this model (schema)
 const User = mongoose.model("User", userSchema);
