@@ -56,7 +56,15 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
         
         await req.user.populate({
             path : 'tasks',
-            match // Passing object "match", which is created above, as a property of populate()
+            match, // Passing object "match", which is created above, as a property of populate()
+            options : {
+                // Number of resources returned in one request 
+                limit :  parseInt(req.query.limit), // Convert string contains number into actual integer since all passing values from req.querry is String
+                // Allow you to iterate over pages
+                // Ex: If we have limit = 2 and skip = 0, page will return first 2 results. And if we continue to request with limit = 2 and skip = 2,
+                // page will return NEXT 2 results
+                skip : parseInt(req.query.skip)
+            }
         }).execPopulate();
         
         res.send(req.user.tasks);
