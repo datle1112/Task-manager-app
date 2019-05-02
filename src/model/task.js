@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-// Create "Task" model
-const Task = mongoose.model('Task',{
+// Create "Task" schema 
+const taskSchema = new mongoose.Schema ({
     task : {
         type : String,
         trim : true,
@@ -16,7 +16,11 @@ const Task = mongoose.model('Task',{
         required : true, 
         ref : "User" // Establish connection between "user" property of "Task" model and "User" model
     }
-});
+}, {
+    timestamps : true // If set the "timestamps" to TRUE, mongoose assigns "createAt" and "updateAt" field to your schema 
+})
+// Create "Task" model
+const Task = mongoose.model('Task', taskSchema);
 
 module.exports = Task;
 

@@ -35,15 +35,31 @@ router.post('/tasks', auth, async (req,res) => {
 
 //// CONFIGURING RestAPI FOR READING RESOURCES
 router.get('/tasks', auth, async (req,res) => { // Adding auth middleware 
+    const match = {} // Create object "match" to store all requires from user 
+
+    if (req.query.completed) { // Check whether "completed" attribute is supplied as part of URL or not
+        match.completed = req.query.completed === 'true';
+        // In this case, we try to set property "completed" of obejct "match" to Boolean value. However, if we just type 
+        // match = completed = req.querry.completed, this solution wont work and we only receive string value since 
+        // we didn't specify "completed" property to Boolean value
+        // If req.query.completed === "true" => match.completed = TRUE (boolean, not string)
+        // If req.query.completed !== "true" => match.completed = FALSE (boolean, not string)
+    }
+
     try {
         // First approach : Modify .find() function 
         // const tasks = await Task.find({owner : req.user._id});
         // res.send(tasks);
 
         // Second approach : Using populate() to fetch data
-        await req.user.populate('tasks').execPopulate();
+        // In other to filter task's data that is sent back to user, we have to restructure populate() function  
+        
+        await req.user.populate({
+            path : 'tasks',
+            match // Passing object "match", which is created above, as a property of populate()
+        }).execPopulate();
+        
         res.send(req.user.tasks);
-
     } catch(e) {
         res.status(500).send();
     }

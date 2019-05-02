@@ -54,6 +54,8 @@ const userSchema = new mongoose.Schema({
             required : true
         }
     }]
+}, {
+    timestamps : true // If set the "timestamps" to TRUE, mongoose assigns "createAt" and "updateAt" field to your schema 
 });
 
 
