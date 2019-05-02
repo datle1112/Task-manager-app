@@ -36,7 +36,10 @@ router.post('/tasks', auth, async (req,res) => {
 //// CONFIGURING RestAPI FOR READING RESOURCES
 router.get('/tasks', auth, async (req,res) => { // Adding auth middleware 
     const match = {} // Create object "match" to store all requires from user 
+    const sort = {} 
 
+    //// If filtered condition "completed" is provided 
+    // Basic structure of URL : /tasks?completed=true 
     if (req.query.completed) { // Check whether "completed" attribute is supplied as part of URL or not
         match.completed = req.query.completed === 'true';
         // In this case, we try to set property "completed" of obejct "match" to Boolean value. However, if we just type 
@@ -46,6 +49,23 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
         // If req.query.completed !== "true" => match.completed = FALSE (boolean, not string)
     }
 
+
+    //// If sorting criteria is provided 
+    /* 
+    Basic structure of URL : /tasks?sortBy=sortField:order 
+        sortField : The field we want to sort 
+        order : The order we want to sort that field ("des" and "asc")
+    */ 
+    if (req.query.sortBy) {
+        const parts = req.query.sortBy.split(":");
+        sort[parts[0]] = parts[1] === "des" ? -1 : 1 // Using ternary operator to pass value to property named "part[0]" inside "sort" object
+        /* 
+        Working principle of ternary operator : if the condition is correct (in this case part[1] === "desc"), we return value will be first element before 
+        colon (in this case is -1 (integer, not string)). Otherwise, returned value is the one after colon (in this case is 1 (integer, not string))
+        */
+    }
+
+
     try {
         // First approach : Modify .find() function 
         // const tasks = await Task.find({owner : req.user._id});
@@ -53,7 +73,6 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
 
         // Second approach : Using populate() to fetch data
         // In other to filter task's data that is sent back to user, we have to restructure populate() function  
-        
         await req.user.populate({
             path : 'tasks',
             match, // Passing object "match", which is created above, as a property of populate()
@@ -63,10 +82,14 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
                 // Allow you to iterate over pages
                 // Ex: If we have limit = 2 and skip = 0, page will return first 2 results. And if we continue to request with limit = 2 and skip = 2,
                 // page will return NEXT 2 results
-                skip : parseInt(req.query.skip)
+                skip : parseInt(req.query.skip),
+                sort // Define all sorting criterias 
+                /* Property name is the field we want to sort, the value is the order we want to sort this field : 
+                    1 : Ascending order (Oldest to newest)
+                   -1 : Descending order ( Newest to oldest)
+                */  
             }
         }).execPopulate();
-        
         res.send(req.user.tasks);
     } catch(e) {
         res.status(500).send();
