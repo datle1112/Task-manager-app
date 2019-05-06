@@ -43,7 +43,7 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
     if (req.query.completed) { // Check whether "completed" attribute is supplied as part of URL or not
         match.completed = req.query.completed === 'true';
         // In this case, we try to set property "completed" of obejct "match" to Boolean value. However, if we just type 
-        // match = completed = req.querry.completed, this solution wont work and we only receive string value since 
+        // match.completed = req.querry.completed, this solution wont work and we only receive string value since 
         // we didn't specify "completed" property to Boolean value
         // If req.query.completed === "true" => match.completed = TRUE (boolean, not string)
         // If req.query.completed !== "true" => match.completed = FALSE (boolean, not string)
@@ -60,19 +60,19 @@ router.get('/tasks', auth, async (req,res) => { // Adding auth middleware
         const parts = req.query.sortBy.split(":");
         sort[parts[0]] = parts[1] === "des" ? -1 : 1 // Using ternary operator to pass value to property named "part[0]" inside "sort" object
         /* 
-        Working principle of ternary operator : if the condition is correct (in this case part[1] === "desc"), we return value will be first element before 
+        Working principle of ternary operator : if the condition is correct (in this case part[1] === "des"), we return value will be first element before 
         colon (in this case is -1 (integer, not string)). Otherwise, returned value is the one after colon (in this case is 1 (integer, not string))
         */
     }
 
 
     try {
-        // First approach : Modify .find() function 
+        // First approach : Modify ".find()" function 
         // const tasks = await Task.find({owner : req.user._id});
         // res.send(tasks);
 
         // Second approach : Using populate() to fetch data
-        // In other to filter task's data that is sent back to user, we have to restructure populate() function  
+        // In other to manipulate task's data that is sent back to user, we have to restructure populate() function  
         await req.user.populate({
             path : 'tasks',
             match, // Passing object "match", which is created above, as a property of populate()

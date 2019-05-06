@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
+//// Create "Task" model
 
+const mongoose = require('mongoose');
 // Create "Task" schema 
 const taskSchema = new mongoose.Schema ({
     task : {

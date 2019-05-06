@@ -2,12 +2,32 @@
 const express = require('express');
 const router = new express.Router();
 const User = require('../model/user');
+const multer = require('multer');
 
+
+const upload = multer({
+    dest : 'avatar', 
+    limits : { // Limit the size of uploaded files
+        fileSize : 1000000 // Number in byte, 1000000 bytes = 1 MB
+    },
+    fileFilter(req, file, cb) { // Function to control which file is allowed to upload 
+        /* There are two ways to call cb (call-back) function:
+            1. Something went wrong and we want to throw an Error, we just simply pass that to cb as the first argument  
+                cb(new Error({error : "File must be PDF"}));
+            2. If everything goes well, we wont pass first argument to cb but we still have to define it. The first argument will be "undefined" and
+            then second argument is Boolean. It is TRUE if upload is executed successfully 
+                cb(undefined, true);
+        */
+       if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) { // "match()" allows us to provide regular expression, Syntax: /regular expression/
+            return cb(new Error("Please upload JPG,JPEG or PNG files only"));
+       }
+       cb(undefined, true);
+    } 
+});
 const auth = require('../middleware/auth'); // Import middleware "auth.js"
 // If we using app.use(auth) inside index.js, this middleware will apply to all route and it isn't correct since we don't want "create" and "login" phase
 // of user have authentication process. Therefore, we have to add the middleware to individual route. This action is done by adding middleware function 
 // as the SECOND argument of GET,POST,PATCH and DELETE methods
-module.exports = router;
 
 // CONFIGURING RestAPI FOR CREATING RESOURCES
 // router.post('/users', (req, res) => {
@@ -43,11 +63,11 @@ router.post('/users/login', async (req,res) => {
     }
 });
 // Route to handle user logout from one device only (only detele one toke)
-router.post('/users/logout' ,auth , async (req,res) => {
+router.post('/users/logout' , auth, async (req,res) => {
     try {
-        req.user.tokens = req.user.tokens.filter((token) => { 
-            // Each token object inside "tokens" object array has two property. First is "token" and second is "_id"
-            return token.token !== req.token; 
+        req.user.tokens = req.user.tokens.filter((jwt_token) => { 
+            // Each object inside "tokens" array has two properties. First is "token" and second is "_id"
+            return jwt_token.token !== req.token; 
             // Check if token is inside "tokens" object array. If it is equal with passing token in authentication process, we will 
             // delete that token to give user ability to logout. The rest will be saved to keep user login on other devices 
         });
@@ -67,10 +87,20 @@ router.post('/users/logoutAll', auth, async(req,res) => {
         res.status(500).send();
     }
 })
+// Route to handle file upload (avatar) from user
+router.post('/users/me/avatar', upload.single('avatar'), (req,res) => {
+    res.send();
+}, (error, req, res, next) => { 
+    // This arrow function is used to handle error. It's important to have all four arguments "error, req, res, next" so Express server 
+    // knows that this function is designed to handle error
+    res.status(400).send({error : error.message});
+});
+
+
 //// CONFIGURING RestAPI FOR READING RESOURCES
 router.get('/users/me', auth, async (req,res) => {
     res.status(200).send(req.user);
-})
+});
 
 /* 
 Since we already improve route handle to fetch user's profile as well as adding authentication to application, access to invidiual user's data 
@@ -109,7 +139,7 @@ router.patch('/users/me', auth, async (req,res) => {
     const allowedUpdate = ['name', 'age', 'email', 'password']; // Array contains allowed changes in "user"
     const isAllowed = updates.every((update) => allowedUpdate.includes(update)); 
     // Check if all elements in "updates" array are included in "allowedUpdate" array
-    // If callback function inside "every" method is "true", the return value of "every" is "true". If there is only one "false", the
+    // If all callback functions inside "every" method are "true", the return value of "every" is "true". If there is only one "false", the
     // value of "every" will immediately be "false"
 
     // The used method is "every". Basically, this method is similar with "forEach" and "map", the difference is the return value 
@@ -151,4 +181,4 @@ router.delete('/users/me', auth, async(req,res) => {
         res.status(500).send();
     }
 });
-
+module.exports = router;

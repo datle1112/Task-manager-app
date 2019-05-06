@@ -1,4 +1,4 @@
-// Create "User" model
+//// Create "User" model
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bscrypt = require('bcryptjs');
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
     },
     password : {
         type : String,
-        required : true,
+        required : [true,"Please provide password"],
         trim : true, 
         minlength : 7,
         validate(value) {
@@ -24,9 +24,9 @@ const userSchema = new mongoose.Schema({
         } 
     },
     email : {
-        type : String || Number,
+        type : String,
         unique : true, // Make sure that each email is unique 
-        required : true,
+        required : [true,"Please provide email"],
         trim : true,
         lowercase : true,
         validate(value) {
@@ -69,7 +69,7 @@ userSchema.pre("save", async function (next) {
     // The executed function must be standard function, not arrow since "this" binding plays an important role
     const user = this; // Access to individual user that's about to be saved through variable "user"
     
-    // We only want to hash the password when it's first created or modified (updated) by user
+    // We only want to hash the password when it's first created or updated by user
     if (user.isModified('password')){ 
         user.password = await bscrypt.hash(user.password, 8); 
         // First argument is plain text to hash,second is number round to execute algorithm 
@@ -100,7 +100,7 @@ userSchema.virtual('tasks', { // First argument is name of virtual field, second
     // foreignField is the name of the field on the "OTHER COLLECTION" that creates relationship (in this case, OTHER COLLECTION is "Task")
 }) 
  
-//// Define new function to verify user of by using "statics"
+//// Define new function to verify user of by using "statics",
 // which allows us to create function that exists directly on mongoose's model
 userSchema.statics.findByCredentials = async (email, password) => { // Arrow functiom is used since "this" binding isn't important
     const user = await User.findOne({email});
@@ -114,7 +114,7 @@ userSchema.statics.findByCredentials = async (email, password) => { // Arrow fun
     }
     return user;
 }
-//// Define new function for an "instance" of "User" model by using "methods" since we will generate Json Web token for specific user 
+//// Define new function for an "instance" of "User" model by using "methods" since we generate Json Web token for specific user 
 userSchema.methods.generateAuthToken = async function() {
     const user = this;
     const token = jwt.sign({ _id: user._id.toString() }, 'haha'); 
@@ -138,8 +138,10 @@ userSchema.methods.toJSON = function () {
     // In more detail, whenever an JSON object (A) is sent by res.send() method, it will be sent through response by "JSON.stringify(A)"
     const user = this;
     const userObject = user.toObject(); // userObject variable contains all raw data from individual "user" object
-
     // Manipulate return JSON object
+    if (user.age == 0) {
+        delete userObject.age
+    }
     delete userObject.password
     delete userObject.tokens 
 

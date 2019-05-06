@@ -1,3 +1,5 @@
+// Connect with database mongoDB 
+
 const mongoose = require('mongoose');
 
 // Data validation : Enforce data to follow some rules

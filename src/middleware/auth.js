@@ -1,8 +1,10 @@
+// Define authentication middleware function "auth()"
+
 const jwt = require('jsonwebtoken'); // This library is imported to validate provided jwt
 const User = require('../model/user'); // Find user in database after authentication process
 const auth = async (req, res, next) => {
     // The operation of authentication process : First user have to login or sign up accout to receive json web token (jwt). After that, this token is 
-    // sent to server as a part of header in request and server will execute vadilation process. 
+    // sent to server (as a part of header in request) and server will execute vadilation process. 
     // The header sends jwt to server by a pair of key-value:
     // key : Authorization
     // value : Bearer (jwt)
@@ -27,7 +29,6 @@ const auth = async (req, res, next) => {
     } catch {
         res.status(401).send({error : "Please authenticate"});
     }
-    
 };
 
 module.exports = auth;
