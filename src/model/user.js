@@ -53,7 +53,13 @@ const userSchema = new mongoose.Schema({
             type : String,
             required : true
         }
-    }]
+    }], 
+    avatar : { 
+        /*
+         We're not gonna store image data of user on file system. The reason is that all deployment platform (Heroku, AWS) require programmer to take code and push it to repository on their severs. In other words,file system will be wiped everytime the application is deployed and we will endup lose image data of users. Therefore, new field (property) in User model is needed to store image BINARY data 
+        */
+        type : Buffer
+    }
 }, {
     timestamps : true // If set the "timestamps" to TRUE, mongoose assigns "createAt" and "updateAt" field to your schema 
 });

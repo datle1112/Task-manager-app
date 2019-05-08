@@ -6,14 +6,16 @@ const multer = require('multer');
 
 
 const upload = multer({
-    dest : 'avatar', 
+    // dest : 'avatar', 
+    // We have to delete property "dest" to prevent multer library from saving image to "avatar" directory. Instead, it's now passing image data 
+    // to another function 
     limits : { // Limit the size of uploaded files
         fileSize : 1000000 // Number in byte, 1000000 bytes = 1 MB
     },
     fileFilter(req, file, cb) { // Function to control which file is allowed to upload 
         /* There are two ways to call cb (call-back) function:
             1. Something went wrong and we want to throw an Error, we just simply pass that to cb as the first argument  
-                cb(new Error({error : "File must be PDF"}));
+                cb(new Error("File must be PDF"));
             2. If everything goes well, we wont pass first argument to cb but we still have to define it. The first argument will be "undefined" and
             then second argument is Boolean. It is TRUE if upload is executed successfully 
                 cb(undefined, true);
@@ -88,7 +90,10 @@ router.post('/users/logoutAll', auth, async(req,res) => {
     }
 })
 // Route to handle file upload (avatar) from user
-router.post('/users/me/avatar', upload.single('avatar'), (req,res) => {
+router.post('/users/me/avatar', auth, upload.single('avatar'), async (req,res) => {
+    // Now image data is no longer saving to "avatar" directory on file system. We can access to it through "req.file"
+    req.user.avatar = req.file.buffer // Save image buffer data to "avatar" property of User model 
+    await req.user.save(); 
     res.send();
 }, (error, req, res, next) => { 
     // This arrow function is used to handle error. It's important to have all four arguments "error, req, res, next" so Express server 
@@ -166,6 +171,7 @@ router.patch('/users/me', auth, async (req,res) => {
 
 
 //// CONFIGURING RestAPI FOR DELETING RESOURCES 
+// Route to detele user (all data)
 router.delete('/users/me', auth, async(req,res) => {
     try{
         // const user = await User.findByIdAndDelete(req.user._id);
@@ -181,4 +187,15 @@ router.delete('/users/me', auth, async(req,res) => {
         res.status(500).send();
     }
 });
+// Route to delete avatar of user 
+router.delete('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+    try {
+        req.user.avatar = undefined; // Set property "avatar" of User model to "undefined" for deleting purpose
+        await req.user.save();
+        res.send()
+    } catch {
+        res.status(500).send();
+    }
+})
+
 module.exports = router;
