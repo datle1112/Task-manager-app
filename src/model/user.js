@@ -123,7 +123,7 @@ userSchema.statics.findByCredentials = async (email, password) => { // Arrow fun
 //// Define new function for an "instance" of "User" model by using "methods" since we generate Json Web token for specific user 
 userSchema.methods.generateAuthToken = async function() {
     const user = this;
-    const token = jwt.sign({ _id: user._id.toString() }, 'haha'); 
+    const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET); 
     // Since user._id is the ObjectID, we need to convert it to string, which jsonwebtoken expects 
     // First argument is element that uniquely identifies the user (in this case we use ObjectID), second argument is "secret" 
 

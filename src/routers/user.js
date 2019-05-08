@@ -1,10 +1,11 @@
 // Modularize route handle of "user" for later use purpose 
 const express = require('express');
-const router = new express.Router();
 const User = require('../model/user');
 const multer = require('multer');
 const sharp = require('sharp'); // npm library used to convert image type and resize image
+const {sendWelcomeEmail, sendCancelEmail} = require('../emails/account');
 
+const router = new express.Router();
 
 const upload = multer({
     // dest : 'avatar', 
@@ -49,6 +50,7 @@ router.post('/users', async (req,res) => {
     const user = new User(req.body);
     try {
         await user.save();
+        await sendWelcomeEmail(user.email, user.name);
         const token = await user.generateAuthToken();
         res.status(201).send({user, token});
     } catch (e) {
@@ -201,6 +203,7 @@ router.delete('/users/me', auth, async(req,res) => {
         
         // Rewrite above code
         await req.user.remove() // Removes this document from the database
+        sendCancelEmail(req.user.email, req.user.name);
         res.send(req.user);
     } catch(e) {
         res.status(500).send();

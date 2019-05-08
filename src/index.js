@@ -13,7 +13,7 @@ const userRouter = require('../src/routers/user');
 const taskRouter = require('../src/routers/task');
 
 const app = express();
-const port = process.env.PORT || 3000; // In case we only want to run this application on localhost, we can use port 3000 as normal.
+const port = process.env.PORT; // In case we only want to run this application on localhost, we can use port 3000 as normal.
 
 
 app.use(express.json()); 

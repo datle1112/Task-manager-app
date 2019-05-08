@@ -11,7 +11,7 @@ const auth = async (req, res, next) => {
     try {   
         // First we need to access to jwt inside header (inside request)
         const token = req.header('Authorization').replace("Bearer ", ""); 
-        const decoded = jwt.verify(token,'haha'); // "decoded" variable stores _id and created time of user 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // "decoded" variable stores _id and created time of user 
         const user = await User.findOne({
              _id : decoded._id,
              'tokens.token' : token 
