@@ -3,6 +3,7 @@ const express = require('express');
 const router = new express.Router();
 const User = require('../model/user');
 const multer = require('multer');
+const sharp = require('sharp'); // npm library used to convert image type and resize image
 
 
 const upload = multer({
@@ -85,14 +86,18 @@ router.post('/users/logoutAll', auth, async(req,res) => {
         req.user.tokens = [];
         await req.user.save();
         res.send();
-    } catch {
+    } catch(e) {
         res.status(500).send();
     }
 })
 // Route to handle file upload (avatar) from user
 router.post('/users/me/avatar', auth, upload.single('avatar'), async (req,res) => {
     // Now image data is no longer saving to "avatar" directory on file system. We can access to it through "req.file"
-    req.user.avatar = req.file.buffer // Save image buffer data to "avatar" property of User model 
+
+    const buffer = await sharp(req.file.buffer).resize({width: 250, height: 250}).png().toBuffer() 
+    // Resize (by "resize()") and convert type of image to png (by "png()"). After that, convert image data back to Buffer (Binary) data 
+    
+    req.user.avatar = buffer // Save image buffer data to "avatar" property of User model 
     await req.user.save(); 
     res.send();
 }, (error, req, res, next) => { 
@@ -132,7 +137,21 @@ through _id isn't necessary anymore and we can detele it. I will keep that insid
 //     }
     }); 
 */
+// Route to fetch user's avatar
+router.get('/users/:id/avatar', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
 
+        if (!user || !user.avatar) {
+            throw new Error();
+        } 
+        // We need to tell requester what type of data they're getting back
+        res.set('Content-Type','image/png') // First is name of response header we're trying to set and second one is its value 
+        res.send(user.avatar)
+    } catch (e) {
+        res.status(404).send();
+    }
+})
 
 //// CONFIGURING RestAPI FOR UPDATING RESOURCES
 router.patch('/users/me', auth, async (req,res) => {
