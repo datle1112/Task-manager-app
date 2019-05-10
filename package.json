@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "env-cmd ./config/dev.env nodemon src/index.js",
+    "test": "env - cmd ./config/test.env jest --watch",
     "DB": "C:/Users/ledat/mongoDB/mongo_DB/bin/mongod.exe --dbpath=/Users/ledat/mongoDB_data"
-
   },
   "keywords": [],
   "author": "",
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "env-cmd": "^8.0.2",
+    "jest": "^24.8.0",
     "nodemon": "^1.18.9"
   }
 }
