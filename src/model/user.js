@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     },
     email : {
         type : String,
-        unique : true, // Make sure that each email is unique 
+        unique : [true, "Email already taken"], // Make sure that each email is unique 
         required : [true,"Please provide email"],
         trim : true,
         lowercase : true,
