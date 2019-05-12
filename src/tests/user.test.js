@@ -108,3 +108,41 @@ test("Should not delete user's account", async () => {
     .send()
     .expect(401)
 });
+
+test("Should upload user's avatar", async () => {
+    await request(app)
+    .post('/users/me/avatar')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .attach('avatar','src/tests/fixtures/profile-pic.jpg') 
+    // Attach file when conducting test. First argument is form field we're trying to set and second one is path to file we want to attach
+    // (it starts from root of our project)
+    .expect(200)
+
+    // Assertion to check whether user's avatar is uploaded or not (check if property avatar of user contains Buffer data)
+    const user = await User.findById(userOneId);
+    expect(user.avatar).toEqual(expect.any(Buffer))
+    // expect.any(constructor) matches anything that was created with the given constructor. In this case, we check if property "avatar"
+    // of user contains Buffer data 
+})
+
+test("Should update valid user field", async () => {
+    await request(app)
+    .patch('/users/me')
+    .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
+    .send({
+        name : 'Mike'
+    })
+    .expect(200)
+    const user = await User.findById(userOneId);
+    expect(user.name).toBe('Mike');
+})
+
+test('Should update invalid user field', async () => {
+    await request(app)
+    .patch('/users/me')
+    .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
+    .send({
+        location : 'Finland'
+    })
+    .expect(400)
+})
