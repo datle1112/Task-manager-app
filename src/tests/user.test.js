@@ -1,28 +1,23 @@
+// This file contains test related to User API route handle
+// In other to prevent conflict in testing process when both test suites interact with same database, we have to make sure that 
+// all tests occur sequentially. To do that, we add new flag to "test" script in "package.json" file. --runInBand flag is added along side 
+// with --watch flag for "jest" 
 const request = require('supertest'); // This npm library supports Promises so we could use async-await inside test 
 const app = require('../app');
 const User = require('../model/user');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const { 
+    userOne, 
+    userOneId,
+    userTwo,
+    userTwoId,
+    taskOne,
+    taskTwo,
+    taskThree, 
+    setupDatabase} = require('../tests/fixtures/db');
 
-const userOneId = new mongoose.Types.ObjectId()
-const userOne = { 
-    _id : userOneId,
-    name : "Arya",
-    email : "stark@gmail.com",
-    password : "12345678",
-    tokens : [{
-        token : jwt.sign({_id : userOneId}, process.env.JWT_SECRET)
-    }]
-}
+
 // Set up to wipe out mongoDB database BEFORE conducting test 
-beforeEach( async () => {
-    // If we don't provide any argument for "deleteMany()", it gonna detele all records
-    await User.deleteMany(); // "deleteMany()" is an asynchronous function and we have to tell Jest that 
-
-    // Wiping out the database before testing is a good approach. However, if we want to test "/users/login" route, our database must have at least 
-    // one user. We have to create that user AFTER "deleteMany()" function 
-    await new User(userOne).save();
-});
+beforeEach(setupDatabase);
 
 test('Should signup a new user', async () => {
     const response = await request(app) // All res data will be stored inside "response" variable 
@@ -143,6 +138,37 @@ test('Should update invalid user field', async () => {
     .set('Authorization',`Bearer ${userOne.tokens[0].token}`)
     .send({
         location : 'Finland'
+    })
+    .expect(400)
+})
+
+test("Should not signup user with invalid email", async () => {
+    await request(app)
+    .post('/users')
+    .send({
+        name : 'New user',
+        password : '12345678',
+        email : 'asdascczxcz'
+    })
+    .expect(400)
+})
+
+test("Shoud not update user if unauthenticated", async() => {
+    await request(app)
+    .patch('/users/me')
+    .send({
+        name : 'News'
+    })
+    .expect(401)
+})
+
+test("Should not update user with invalid email/password", async () => {
+    await request(app)
+    .patch('/users/me')
+    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+    .send({
+        email : 'asdaczxc',
+        password : '1'
     })
     .expect(400)
 })
